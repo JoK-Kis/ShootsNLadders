@@ -4,7 +4,7 @@
 
 - **Start every response with "jacob".**
 - **Never write code before discussing it with jacob**: explain what you plan to write and the possible alternatives, then wait for approval.
-- **Git is jacob's job.** Do not commit, branch, push or otherwise change git history unless jacob says so. This will be discussed further later.
+- **Git is jacob's job.** Do not commit, branch, push or otherwise change git history unless jacob says so. Commit and push only when jacob explicitly asks, never automatically after a step. Never add a "Co-Authored-By: Claude" line or any other AI attribution to commits or PRs.
 - **Backend first.** Do not build any frontend or UI until jacob says the design is decided.
 - **Small steps.** Build bottom-up, one feature at a time. Write one file at a time (or a few only if they're the same kind, e.g. two DTOs) and wait for jacob's approval before the next. Keep plans high-level and decide details only when building each step.
 - This is a personal learning project (C# / .NET practice). Explain the patterns you use.
@@ -65,7 +65,7 @@ Folders currently hold only `.gitkeep` placeholders; the .NET projects are not c
 - **Backend is the source of truth.** Never trust the client: validate every input on the server (DTO validation attributes) and back it up with database constraints.
 - **Entries:** one entry per day (unique on date; per user once accounts exist). Ratings are whole numbers 1–10. `Date` is a `DateOnly`, sent by the client and validated by the server (no future dates). No `UserId` until step 5 (added then with a migration).
 - **Total** (physical + mental + emotional) is a read-only property on the `Entry` entity (`Total => Physical + Mental + Emotional`), computed at runtime and never stored in the database (EF Core ignores it). See `redflags.md` for the possible future fix (SQLite generated column).
-- **Data access:** repository pattern. Interfaces in Core, EF Core implementations in Infrastructure.
+- **Data access:** specific repositories (no generic `IRepository<T>`) + Unit of Work. Interfaces in Core, EF Core implementations in Infrastructure. Repository methods only stage changes; services call `IUnitOfWork.SaveChangesAsync()` once per operation (AppDbContext implements `IUnitOfWork`). Async methods take an optional `CancellationToken`; lists are returned as `IReadOnlyList<T>`; lookups return null when not found.
 - **Tests:** xUnit.
 - **Trying the API:** no Swagger UI. Use Bruno (installed) and the VS Code REST Client extension (`.http` files, installed).
 
