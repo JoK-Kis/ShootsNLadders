@@ -17,3 +17,7 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Per-machine config and secrets (commit .env.example instead)
+.env
+!.env.example

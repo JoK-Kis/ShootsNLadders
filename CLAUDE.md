@@ -4,6 +4,7 @@
 
 - **Start every response with "jacob".**
 - **Never write code before discussing it with jacob**: explain what you plan to write and the possible alternatives, then wait for approval.
+- **Every decision gets real options:** give at least 2–3 genuine alternatives, each with pros and cons. Say which one is the industry norm, and prefer built-in .NET/EF Core tools where they exist (mention them even if not recommended). Never present a question with only one option.
 - **Git is jacob's job.** Do not commit, branch, push or otherwise change git history unless jacob says so. Commit and push only when jacob explicitly asks, never automatically after a step. Never add a "Co-Authored-By: Claude" line or any other AI attribution to commits or PRs.
 - **Backend first.** Do not build any frontend or UI until jacob says the design is decided.
 - **Small steps.** Build bottom-up, one feature at a time. Write one file at a time (or a few only if they're the same kind, e.g. two DTOs) and wait for jacob's approval before the next. Keep plans high-level and decide details only when building each step.
@@ -76,7 +77,10 @@ Only the Core project exists so far (`ShootsNLadders.Core.csproj`); the other fo
 - **Time:** never call `DateTime.UtcNow` directly; inject .NET's `TimeProvider` so tests can use `FakeTimeProvider`.
 - **Future dates:** rejected if after UTC today + 1 day (see `redflags.md`; per-user time zones in step 5).
 - **Member order in classes:** data first (fields, then properties), then constructors, then methods. Group with `// ---- Data ----` / `// ---- Construction ----` comments where it helps.
-- **Tests:** xUnit.
+- **EF Core table rules:** one `IEntityTypeConfiguration<T>` class per entity in `Infrastructure/Data/Configurations/`, picked up with `ApplyConfigurationsFromAssembly`. No EF attributes in Core.
+- **Schema changes:** EF Core migrations. Development: `dotnet ef migrations add <Name>` then `dotnet ef database update`. Production: a migration bundle (`dotnet ef migrations bundle --runtime linux-x64 --self-contained`) run during deploy, after backing up the database file.
+- **Configuration:** `appsettings.json` (committed) holds settings that are the same everywhere and not secret. `server/.env` (git-ignored) holds per-machine values and secrets, e.g. `ConnectionStrings__Default`; its keys are listed in the committed `server/.env.example`. No `appsettings.Development.json`. Development loads `.env` with the DotNetEnv package (`Env.TraversePath().NoClobber().Load()`); production uses systemd `EnvironmentFile=`. The app must refuse to start if `ConnectionStrings:Default` is missing.
+- **Tests:** xUnit. Deferred: write tests once the whole backend (Core, Infrastructure, Api) is set up, not file by file. Planned: hand-written fakes vs mocking library and assertion style still to decide; first target is `EntryServiceTests`.
 - **Trying the API:** no Swagger UI. Use Bruno (installed) and the VS Code REST Client extension (`.http` files, installed).
 
 ## Known limitations
