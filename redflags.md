@@ -32,3 +32,11 @@ Known limitations and possible future fixes. Each item: what we chose, why, and 
 - **Limitation:** if it fails, the database error doesn't say which rating was out of range. (Users normally get the DTO's specific error first, so this only affects debugging.)
 - **Possible fix:** split into `CK_Entries_Physical`, `CK_Entries_Mental`, `CK_Entries_Emotional` with a migration.
 - **Revisit when:** a check-constraint failure is ever hard to debug.
+
+## No caching
+
+- **Now:** every request reads straight from SQLite. Nothing is cached on the server or over HTTP.
+- **Why:** a few users' data is a few thousand rows; indexed queries take well under a millisecond and the OS already keeps the database file in memory. Caching would add invalidation bugs (stale graphs after an edit) for no measurable gain.
+- **Limitation:** heavier calculations (e.g. insights over months of data) are recomputed on every request.
+- **Possible fix:** measure first, then cache only the slow calculation with the built-in `HybridCache` (or `IMemoryCache`) and clear that user's cache on every create/edit/delete. HTTP caching (ETags / Output Caching) is the next option to save mobile data.
+- **Revisit when:** step 6 insights or the graph endpoint is measurably slow.
