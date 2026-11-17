@@ -1,4 +1,4 @@
-namespace ShootsNLadders.Core.Services;
+namespace ShootsNLadders.Core.Services.Inputs;
 
 /// <summary>
 /// The data needed to create an entry. The controller builds this from the request DTO,

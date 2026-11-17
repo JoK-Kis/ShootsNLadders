@@ -49,6 +49,7 @@ server/
       Entities/
       Interfaces/                 e.g. repository interfaces, implemented in Infrastructure
       Services/                   business logic (entries, later insights)
+        Inputs/                   input records services receive (e.g. CreateEntryInput)
     ShootsNLadders.Infrastructure/  EF Core + SQLite: DbContext, migrations, repository implementations
       Data/
       Repositories/

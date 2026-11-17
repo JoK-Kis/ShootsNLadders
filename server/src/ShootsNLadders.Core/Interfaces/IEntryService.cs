@@ -1,6 +1,6 @@
 using ShootsNLadders.Core.Common;
 using ShootsNLadders.Core.Entities;
-using ShootsNLadders.Core.Services;
+using ShootsNLadders.Core.Services.Inputs;
 
 namespace ShootsNLadders.Core.Interfaces;
 
