@@ -60,9 +60,9 @@ server/
     ShootsNLadders.Api.Tests/       integration tests against the API
 ```
 
-Dependency direction: Api → Core ← Infrastructure (Api also references Infrastructure only to register it in DI). Core references nothing.
+Dependency direction: Api → Core ← Infrastructure (Api also references Infrastructure only to register its classes in `Program.cs`). Core references nothing.
 
-Only the Core project exists so far (`ShootsNLadders.Core.csproj`); the other folders hold `.gitkeep` placeholders until their projects are created. "ShootsNLadders" is the project name (from the folder name "Shoots and laders").
+Core and Infrastructure projects exist; the Api and test folders hold `.gitkeep` placeholders until their projects are created. "ShootsNLadders" is the project name (from the folder name "Shoots and laders").
 
 ## Design decisions
 
@@ -80,6 +80,9 @@ Only the Core project exists so far (`ShootsNLadders.Core.csproj`); the other fo
 - **EF Core table rules:** one `IEntityTypeConfiguration<T>` class per entity in `Infrastructure/Data/Configurations/`, picked up with `ApplyConfigurationsFromAssembly`. No EF attributes in Core.
 - **Schema changes:** EF Core migrations. Development: `dotnet ef migrations add <Name>` then `dotnet ef database update`. Production: a migration bundle (`dotnet ef migrations bundle --runtime linux-x64 --self-contained`) run during deploy, after backing up the database file.
 - **Configuration:** `appsettings.json` (committed) holds settings that are the same everywhere and not secret. `server/.env` (git-ignored) holds per-machine values and secrets, e.g. `ConnectionStrings__Default`; its keys are listed in the committed `server/.env.example`. No `appsettings.Development.json`. Development loads `.env` with the DotNetEnv package (`Env.TraversePath().NoClobber().Load()`); production uses systemd `EnvironmentFile=`. The app must refuse to start if `ConnectionStrings:Default` is missing.
+- **Dependency injection:** all registrations are written directly in the Api's `Program.cs` (no `AddInfrastructure()` extension, no assembly scanning). Plain `AddDbContext<AppDbContext>` (no pooling). The connection string is read and checked in `Program.cs`, then passed to EF Core as a plain string.
+- **`IUnitOfWork` registration:** `AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>())` so it is the same instance the repositories use. Never `AddScoped<IUnitOfWork, AppDbContext>()` (creates a second context; saves silently do nothing).
+- **Lifetimes:** scoped for anything that touches the database (`AppDbContext`, `IUnitOfWork`, repositories, services). Singleton only for things with no per-request/per-user state whose dependencies are all singletons (e.g. `TimeProvider.System`, later config, HTTP clients, background jobs). Never let a singleton depend on a scoped service (captive dependency).
 - **Tests:** xUnit. Deferred: write tests once the whole backend (Core, Infrastructure, Api) is set up, not file by file. Planned: hand-written fakes vs mocking library and assertion style still to decide; first target is `EntryServiceTests`.
 - **Trying the API:** no Swagger UI. Use Bruno (installed) and the VS Code REST Client extension (`.http` files, installed).
 
