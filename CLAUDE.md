@@ -46,6 +46,7 @@ server/
       Dtos/                       request/response shapes (never expose entities directly)
     ShootsNLadders.Core/            domain: entities, interfaces, business rules; no dependencies on other projects
       Common/                     shared building blocks (Result, Error)
+      Errors/                     the specific errors per feature (e.g. EntryErrors)
       Entities/
       Interfaces/                 e.g. repository interfaces, implemented in Infrastructure
       Services/                   business logic (entries, later insights)
@@ -69,6 +70,8 @@ Only the Core project exists so far (`ShootsNLadders.Core.csproj`); the other fo
 - **Total** (physical + mental + emotional) is a read-only property on the `Entry` entity (`Total => Physical + Mental + Emotional`), computed at runtime and never stored in the database (EF Core ignores it). See `redflags.md` for the possible future fix (SQLite generated column).
 - **Data access:** specific repositories (no generic `IRepository<T>`) + Unit of Work. Interfaces in Core, EF Core implementations in Infrastructure. Repository methods only stage changes; services call `IUnitOfWork.SaveChangesAsync()` once per operation (AppDbContext implements `IUnitOfWork`). Async methods take an optional `CancellationToken`; lists are returned as `IReadOnlyList<T>`; lookups return null when not found.
 - **Service results:** services return a `Result<T>` (success value or an `Error` with a type: Validation, NotFound, Conflict) instead of throwing for expected failures. Controllers map error types to HTTP status codes. `Result`/`Error` live in `Core/Common/`.
+- **Duplicate-save race:** Infrastructure's `SaveChangesAsync` must translate SQLite unique-constraint failures (`DbUpdateException` → `SqliteException` code 19) into Core's `UniqueConstraintException`; services catch it and return the matching Conflict error.
+- **Notes** are trimmed by the service; empty/whitespace notes are stored as null.
 - **Services have interfaces** (e.g. `IEntryService`) in `Core/Interfaces/`; controllers depend on the interface.
 - **Time:** never call `DateTime.UtcNow` directly; inject .NET's `TimeProvider` so tests can use `FakeTimeProvider`.
 - **Future dates:** rejected if after UTC today + 1 day (see `redflags.md`; per-user time zones in step 5).
