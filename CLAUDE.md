@@ -45,6 +45,7 @@ server/
       Controllers/
       Dtos/                       request/response shapes (never expose entities directly)
     ShootsNLadders.Core/            domain: entities, interfaces, business rules; no dependencies on other projects
+      Common/                     shared building blocks (Result, Error)
       Entities/
       Interfaces/                 e.g. repository interfaces, implemented in Infrastructure
       Services/                   business logic (entries, later insights)
@@ -58,7 +59,7 @@ server/
 
 Dependency direction: Api → Core ← Infrastructure (Api also references Infrastructure only to register it in DI). Core references nothing.
 
-Folders currently hold only `.gitkeep` placeholders; the .NET projects are not created yet. "ShootsNLadders" is the project name (from the folder name "Shoots and laders").
+Only the Core project exists so far (`ShootsNLadders.Core.csproj`); the other folders hold `.gitkeep` placeholders until their projects are created. "ShootsNLadders" is the project name (from the folder name "Shoots and laders").
 
 ## Design decisions
 
@@ -66,6 +67,11 @@ Folders currently hold only `.gitkeep` placeholders; the .NET projects are not c
 - **Entries:** one entry per day (unique on date; per user once accounts exist). Ratings are whole numbers 1–10. `Date` is a `DateOnly`, sent by the client and validated by the server (no future dates). No `UserId` until step 5 (added then with a migration).
 - **Total** (physical + mental + emotional) is a read-only property on the `Entry` entity (`Total => Physical + Mental + Emotional`), computed at runtime and never stored in the database (EF Core ignores it). See `redflags.md` for the possible future fix (SQLite generated column).
 - **Data access:** specific repositories (no generic `IRepository<T>`) + Unit of Work. Interfaces in Core, EF Core implementations in Infrastructure. Repository methods only stage changes; services call `IUnitOfWork.SaveChangesAsync()` once per operation (AppDbContext implements `IUnitOfWork`). Async methods take an optional `CancellationToken`; lists are returned as `IReadOnlyList<T>`; lookups return null when not found.
+- **Service results:** services return a `Result<T>` (success value or an `Error` with a type: Validation, NotFound, Conflict) instead of throwing for expected failures. Controllers map error types to HTTP status codes. `Result`/`Error` live in `Core/Common/`.
+- **Services have interfaces** (e.g. `IEntryService`) in `Core/Interfaces/`; controllers depend on the interface.
+- **Time:** never call `DateTime.UtcNow` directly; inject .NET's `TimeProvider` so tests can use `FakeTimeProvider`.
+- **Future dates:** rejected if after UTC today + 1 day (see `redflags.md`; per-user time zones in step 5).
+- **Member order in classes:** data first (fields, then properties), then constructors, then methods. Group with `// ---- Data ----` / `// ---- Construction ----` comments where it helps.
 - **Tests:** xUnit.
 - **Trying the API:** no Swagger UI. Use Bruno (installed) and the VS Code REST Client extension (`.http` files, installed).
 
